@@ -18,10 +18,17 @@ const createOrder = async (userId, details) => {
 
 const getAllOrders = async (userId, options = {}) => {
   try {
-    const { limit = 10, startDate, endDate, lastSnapshot: lastVisible } = options;
+    const {
+      limit = 10,
+      startDate,
+      endDate,
+      lastSnapshot: lastVisible,
+      firstSnapshot = null,
+    } = options;
 
     // 1. Create a base query for both data and count
-    let baseQuery = db.collection('orders').doc(userId).collection('orders');
+    const collectionRef = db.collection('orders').doc(userId).collection('orders');
+    let baseQuery = collectionRef;
 
     // 2. Apply Filters to the base query
     if (startDate) {
@@ -38,18 +45,29 @@ const getAllOrders = async (userId, options = {}) => {
 
     // 4. Apply Pagination and Ordering for the actual data
     let dataQuery = baseQuery.orderBy('createdAt', 'desc');
-
-    if (lastVisible) {
-      dataQuery = dataQuery.startAfter(lastVisible);
+    console.log('Base Query:', firstSnapshot, lastVisible);
+    if (firstSnapshot) {
+      const firstDocSnapshot = await collectionRef.doc(firstSnapshot).get();
+      if (firstDocSnapshot.exists) {
+        dataQuery = dataQuery.startAt(firstDocSnapshot);
+      }
+    } else if (lastVisible) {
+      // Fetch DocumentSnapshot by id for startAfter
+      const lastDocSnapshot = await collectionRef.doc(lastVisible).get();
+      if (lastDocSnapshot.exists) {
+        dataQuery = dataQuery.startAfter(lastDocSnapshot);
+      }
     }
-
     const snapshot = await dataQuery.limit(limit).get();
 
     const orders = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
-    return { orders, total, lastVisible: snapshot.docs[snapshot.docs.length - 1] };
+    // For pagination, return the id of the last doc as lastVisible
+    const lastDoc = snapshot.docs[snapshot.docs.length - 1];
+    const lastVisibleValue = lastDoc ? lastDoc.id : null;
+    return { orders, total, lastVisible: lastVisibleValue };
   } catch (error) {
     console.error('Error fetching orders:', error);
     throw new Error('Failed to retrieve orders');

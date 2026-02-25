@@ -32,20 +32,21 @@ const getOrderByUserId = async (req, res) => {
   logger.info(`[Get Order By user ID]: retrieving order for user: ${userId}`);
 
   try {
-    const { limit, startDate, endDate, lastSnapshot } = req.query;
+    const { limit, startDate, endDate, lastSnapshot, firstSnapshot } = req.query;
     const options = {
       limit: limit ? parseInt(limit, 10) : 10,
       startDate,
       endDate,
       lastSnapshot,
+      firstSnapshot,
     };
     const { orders, total, lastVisible } = await OrderModel.getAllOrders(userId, options);
-    // For next page, client should use last order's createdAt as lastCreatedAt
+    // For next page, client should use lastVisible (createdAt value) as lastSnapshot
     ResponseHandler.success(res, 200, 'Orders retrieved successfully', {
       orders,
       total,
       limit: options.limit,
-      lastVisible,
+      lastVisible, // This is the createdAt value of the last doc
     });
   } catch (error) {
     logger.error(`[Get Orders By user ID][Error][${userId}]: ${error.message}`);
