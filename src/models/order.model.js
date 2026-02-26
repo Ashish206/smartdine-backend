@@ -59,7 +59,6 @@ const getAllOrders = async (userId, options = {}) => {
         dataQuery = dataQuery.startAfter(lastDocSnapshot);
       }
     }
-    console.log('====>', startDate, endDate, dataQuery._queryOptions);
     const snapshot = await dataQuery.limit(limit).get();
 
     const orders = snapshot.docs.map((doc) => ({
