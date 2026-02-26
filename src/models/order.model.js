@@ -32,10 +32,12 @@ const getAllOrders = async (userId, options = {}) => {
 
     // 2. Apply Filters to the base query
     if (startDate) {
-      baseQuery = baseQuery.where('createdAt', '>=', new Date(startDate));
+      // Parse startDate as midnight of the day
+      baseQuery = baseQuery.where('createdAt', '>=', new Date(`${startDate}T00:00:00`));
     }
     if (endDate) {
-      baseQuery = baseQuery.where('createdAt', '<=', new Date(endDate));
+      // Parse endDate as end of the day (23:59:59)
+      baseQuery = baseQuery.where('createdAt', '<=', new Date(`${endDate}T23:59:59`));
     }
 
     // 3. Get Total Count efficiently (No document downloads)
