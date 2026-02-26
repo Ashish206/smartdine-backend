@@ -45,7 +45,6 @@ const getAllOrders = async (userId, options = {}) => {
 
     // 4. Apply Pagination and Ordering for the actual data
     let dataQuery = baseQuery.orderBy('createdAt', 'desc');
-    console.log('Base Query:', firstSnapshot, lastVisible);
     if (firstSnapshot) {
       const firstDocSnapshot = await collectionRef.doc(firstSnapshot).get();
       if (firstDocSnapshot.exists) {
@@ -58,6 +57,7 @@ const getAllOrders = async (userId, options = {}) => {
         dataQuery = dataQuery.startAfter(lastDocSnapshot);
       }
     }
+    console.log('====>', startDate, endDate, dataQuery._queryOptions);
     const snapshot = await dataQuery.limit(limit).get();
 
     const orders = snapshot.docs.map((doc) => ({
@@ -95,9 +95,33 @@ const getOrder = async (userId, orderId) => {
   }
 };
 
+/**
+ * Get analytics for orders in the last N days for a user
+ * @param {string} userId
+ * @param {number} days - Number of days (e.g., 1, 7, 30)
+ * Returns: { orders: [...], count }
+ */
+const getOrderAnalytics = async (userId, days) => {
+  const collectionRef = db.collection('orders').doc(userId).collection('orders');
+  const now = new Date();
+  let startDate;
+  if (days === 1) {
+    startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  } else {
+    startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (days - 1));
+  }
+  const snapshot = await collectionRef.where('createdAt', '>=', startDate).get();
+  const orders = snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+  return { total: orders.length, orders };
+};
+
 module.exports = {
   createOrder,
   getAllOrders,
   updateOrder,
   getOrder,
+  getOrderAnalytics,
 };

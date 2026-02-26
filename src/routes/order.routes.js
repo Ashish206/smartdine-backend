@@ -16,6 +16,8 @@ router.post('/create-order', validate(orderValidation.createOrder), orderControl
 
 router.get('/get-orders', auth, orderController.getOrderByUserId);
 
+router.get('/analytics', auth, orderController.getOrderAnalytics);
+
 router.patch(
   '/update-order/:orderId',
   auth,

@@ -2,7 +2,6 @@
 const ResponseHandler = require('../utils/responseHandler');
 const OrderModel = require('../models/order.model');
 const logger = require('../config/logger');
-const { _overrideRedirectResult } = require('@firebase/auth/internal');
 const TableModel = require('../models/table.model');
 
 /**
@@ -85,9 +84,30 @@ const getOrder = async (req, res) => {
     ResponseHandler.error(res, 500, error.message);
   }
 };
+/**
+ * Get order analytics for 1, 7, and 30 days
+ */
+const getOrderAnalytics = async (req, res) => {
+  const userId = req.user.uid;
+  const days = parseInt(req.query.days, 10);
+  logger.info(`[Order Analytics]: retrieving analytics for user: ${userId}, days: ${days}`);
+  if (![1, 7, 30].includes(days)) {
+    ResponseHandler.error(res, 400, 'Invalid days parameter. Allowed values: 1, 7, 30');
+    return;
+  }
+  try {
+    const analytics = await OrderModel.getOrderAnalytics(userId, days);
+    ResponseHandler.success(res, 200, 'Order analytics retrieved successfully', analytics);
+  } catch (error) {
+    logger.error(`[Order Analytics][Error][${userId}]: ${error.message}`);
+    ResponseHandler.error(res, 500, error.message);
+  }
+};
+
 module.exports = {
   createOrder,
   getOrderByUserId,
   updateOrder,
   getOrder,
+  getOrderAnalytics,
 };
